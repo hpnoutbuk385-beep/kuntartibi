@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kundalik Tartib</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#09090b">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-1: #09090b; /* Asosiy qop-qora */
+            --bg-2: #18181b; 
+            --surface: rgba(24, 24, 27, 0.7);
+            --primary: #f59e0b; /* Apple Nukus Sariq/Tilla */
+            --primary-hover: #d97706;
+            --text: #f8fafc;
+            --text-muted: #a1a1aa;
+            --accent: #fcd34d;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+            color: var(--text);
+            min-height: 100vh;
+            background-attachment: fixed;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .app-wrapper {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 2.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 50;
+        }
+
+        .sidebar-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 3rem;
+            text-align: left;
+            line-height: 1.1;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            list-style: none;
+        }
+
+        .menu-item {
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+            border: 1px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.03);
+            color: var(--text);
+        }
+
+        .menu-item.active {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--primary);
+            border-color: rgba(245, 158, 11, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .app-wrapper {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: fixed;
+                bottom: 0;
+                top: auto;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 85px;
+                padding: 0.5rem;
+                flex-direction: row;
+                border-right: none;
+                border-top: 1px solid rgba(255,255,255,0.05);
+                justify-content: center;
+                align-items: center;
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            }
+            .sidebar-logo {
+                display: none;
+            }
+            .sidebar-menu {
+                flex-direction: row;
+                width: 100%;
+                justify-content: space-around;
+            }
+            .menu-item {
+                flex-direction: column;
+                padding: 0.5rem;
+                font-size: 0.75rem;
+                gap: 0.25rem;
+                border-radius: 0.75rem;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 2rem 1.25rem 100px 1.25rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #ffffff, #fde68a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.01em;
+            line-height: 1.1;
+        }
+
+        header p {
+            color: var(--primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(245, 158, 11, 0.2);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .motivation {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+            min-height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        button.primary-btn {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 1rem 2rem;
+            border-radius: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+
+        button.primary-btn:hover {
+            background: var(--primary);
+            color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+
+        button.primary-btn:active {
+            transform: scale(0.98);
+        }
+
+        .status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .progress-wrapper {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .progress-container {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border-radius: 100px;
+            height: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #fde047);
+            width: 0%;
+            border-radius: 100px;
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-text span:last-child {
+            color: var(--accent);
+        }
+
+        .task-list {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .task-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1.25rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.05), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .task-item:hover::before {
+            transform: translateX(100%);
+        }
+
+        .task-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.02);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+            background: rgba(245, 158, 11, 0.03);
+            border-color: rgba(245, 158, 11, 0.15);
+        }
+
+        .task-item span {
+            font-size: 1.05rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            z-index: 1;
+        }
+
+        .task-item.completed span {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .checkbox {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+            margin-left: 1rem;
+            z-index: 1;
+        }
+
+        .task-item:hover .checkbox {
+            border-color: var(--primary);
+        }
+
+        .task-item.completed .checkbox {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .task-item.completed .checkbox::after {
+            content: '✓';
+            color: #000;
+            font-size: 18px;
+            font-weight: 800;
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="glow"></div>
+    <div class="glow-2"></div>
+    
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span style="color:#ffffff;">Kundalik</span><br>Tartib
+            </div>
+            <ul class="sidebar-menu">
+                <li class="menu-item active" onclick="switchTab('vazifalar', this)">
+                    <span style="font-size:1.3rem;">📋</span> Asosiy
+                </li>
+                <li class="menu-item" onclick="switchTab('namoz', this)">
+                    <span style="font-size:1.3rem;">🕌</span> Namoz
+                </li>
+                <li class="menu-item" onclick="switchTab('strategiya', this)">
+                    <span style="font-size:1.3rem;">🎯</span> Strategiya
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <header id="headerTitle">
+                    <h1>Kundalik Tartib</h1>
+                    <p>Ertaga emas, hozir!</p>
+                </header>
+
+                <div class="card" id="sectionMotivation">
+                    <div class="motivation" id="motivationText">
+                        "Buni qilmasang — kelajaging bo'lmaydi!"
+                    </div>
+                    
+                    <button class="primary-btn" id="notifyBtn" onclick="requestNotificationPermission()">
+                        🔔 Bildirishnomalarni yoqish
+                    </button>
+                    <p class="status" id="notifyStatus">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b;"></span>
+                        Muhim eslatmalar uchun ruxsat bering
+                    </p>
+                </div>
+
+                <div class="card" id="sectionTasks">
+                    <h2 style="margin-bottom: 1.5rem; text-align: left; font-size: 1.25rem; font-weight: 600; color: var(--text);">Bugungi vazifalar</h2>
+                    
+                    <div class="progress-wrapper" id="progressWrapper">
+                        <div class="progress-text">
+                            <span>Kunlik jarayon</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
+
+                    <div class="task-list" id="taskList">
+                        <!-- Tasks logic -->
+                    </div>
+                </div>
+
+                <div class="card" id="sectionPrayer" style="display: none;">
+                    <h2 id="prayerTitle" style="margin-bottom: 1.5rem; text-align: left; font-size: 1.25rem; font-weight: 600; color: var(--text);">Namoz vaqtlari (Nukus)</h2>
+                    <div class="task-list" id="prayerList">
+                        <div style="text-align: center; color: var(--text-muted);">Yuklanmoqda...</div>
+                    </div>
+                </div>
+
+                <div class="card" id="sectionStrategy" style="display: none;">
+                    <h2 style="margin-bottom: 1.5rem; text-align: left; font-size: 1.25rem; font-weight: 600; color: var(--text);">1 Oylik Strategik Tizim</h2>
+                    <div style="text-align: left; font-size: 0.95rem; line-height: 1.6; color: var(--text-muted);">
+                        <h3 style="color: var(--primary); margin-bottom: 0.5rem; font-size: 1.05rem;">1-Hafta: Audit va Tozalash</h3>
+                        <p style="margin-bottom: 1.25rem;">Tizimdagi kamchiliklarni va xatolarni aniqlash. Atrofdagi va raqamli makondan ortiqcha narsalarni tozalash.</p>
+                        
+                        <h3 style="color: var(--primary); margin-bottom: 0.5rem; font-size: 1.05rem;">2-Hafta: Arxitektura va Qurilish</h3>
+                        <p style="margin-bottom: 1.25rem;">Yangi g'oyalar poydevorini qurish. Kod strukturasini eng toza va minimal ko'rinishga keltirish.</p>
+
+                        <h3 style="color: var(--primary); margin-bottom: 0.5rem; font-size: 1.05rem;">3-Hafta: Optimizatsiya va Avtomatlashtirish</h3>
+                        <p style="margin-bottom: 1.25rem;">Takroriy ishlarni avtomatlashtirish. Hisob-kitob va jarayonlarni soddalashtirish.</p>
+
+                        <h3 style="color: var(--primary); margin-bottom: 0.5rem; font-size: 1.05rem;">4-Hafta: Sarhisob, Test va Stabilizatsiya</h3>
+                        <p style="margin-bottom: 1.5rem;">Qilingan ishlarni test qilish. Oilaga va ijtimoiy tahlillarga vaqt ajratish. Kelgusi oy maqsadlarini shakllantirish.</p>
+
+                        <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+                            <h3 style="color: var(--accent); margin-bottom: 1rem; font-size: 1.05rem;">⭐ 3 ta Oltin Qoida</h3>
+                            <ul style="list-style-type: none; padding-left: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                                <li>🛑 <b>Vaqtni bloklash:</b> Namoz vaqtlari to'xtash va fikrni jamlash nuqtasi bo'lsin.</li>
+                                <li>🧹 <b>Toza muhit:</b> Ish joyida va kodda ortiqcha "shovqin" bo'lmasin. Minimalizm!</li>
+                                <li>🌴 <b>Haftalik tanaffus:</b> Yakshanba kuni 2-yarmida kompyuterdan to'liq uziling.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function switchTab(tab, el) {
+            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            document.getElementById('sectionMotivation').style.display = 'none';
+            document.getElementById('sectionTasks').style.display = 'none';
+            document.getElementById('sectionPrayer').style.display = 'none';
+            document.getElementById('sectionStrategy').style.display = 'none';
+            
+            const header = document.getElementById('headerTitle');
+            
+            if (tab === 'vazifalar') {
+                document.getElementById('sectionMotivation').style.display = 'block';
+                document.getElementById('sectionTasks').style.display = 'block';
+                header.querySelector('h1').innerText = 'Kundalik Tartib';
+                header.querySelector('p').innerText = 'Ertaga emas, hozir!';
+            } else if (tab === 'namoz') {
+                document.getElementById('sectionPrayer').style.display = 'block';
+                header.querySelector('h1').innerText = 'Namoz Vaqtlari';
+                header.querySelector('p').innerText = 'Nukus shahri';
+            } else if (tab === 'strategiya') {
+                document.getElementById('sectionStrategy').style.display = 'block';
+                header.querySelector('h1').innerText = 'Oylik Strategiya';
+                header.querySelector('p').innerText = 'Tizimli rivojlanish';
+            }
+        }
+
+        const messages = [
+            "Buni qilmasang — kelajaging bo'lmaydi!",
+            "Kechikmang, vaqt kutib turmaydi!",
+            "Bugungi harakatingiz ertangi natijangizdir.",
+            "O'zgarishni bugundan boshlang!",
+            "Dangasalik — orzular qotilidir.",
+            "Hech qachon taslim bo'lmang!",
+            "Ertaga emas, hozir!"
+        ];
+
+        const el = document.getElementById('motivationText');
+        function updateMotivation() {
+            el.style.opacity = 0;
+            setTimeout(() => {
+                el.innerText = '"' + messages[Math.floor(Math.random() * messages.length)] + '"';
+                el.style.opacity = 1;
+            }, 500);
+        }
+
+        setInterval(updateMotivation, 8000);
+
+        async function requestNotificationPermission() {
+            const statusEl = document.getElementById('notifyStatus');
+            try {
+                if ("Notification" in window) {
+                    const permission = await Notification.requestPermission();
+                    checkPermissionState();
+                } else {
+                    alert("Brauzeringiz bildirishnomalarni qo'llab-quvvatlamaydi.");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function checkPermissionState() {
+            const statusEl = document.getElementById('notifyStatus');
+            const btn = document.getElementById('notifyBtn');
+            
+            if ("Notification" in window && Notification.permission === "granted") {
+                statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--success);"></span> ✅ Bildirishnomalar faol!';
+                btn.style.display = 'none';
+                scheduleLocalNotifications();
+            } else if ("Notification" in window && Notification.permission === "denied") {
+                statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent);"></span> ❌ Ruxsat berilmadi';
+            }
+        }
+
+        function scheduleLocalNotifications() {
+            if (window.localNotifScheduled) return;
+            window.localNotifScheduled = true;
+            
+            setInterval(() => {
+                if (Notification.permission === "granted") {
+                    const msg = messages[Math.floor(Math.random() * messages.length)];
+                    const options = {
+                        body: msg + " Kelajagingiz uchun hoziroq harakat qiling!",
+                        icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                        vibrate: [200, 100, 200, 100, 200],
+                        requireInteraction: true
+                    };
+                    
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(function(registration) {
+                            registration.showNotification("Kundalik Tartib", options);
+                        });
+                    } else {
+                        new Notification("Kundalik Tartib", options);
+                    }
+                }
+            }, 60 * 60 * 1000); // Har 1 soatda
+        }
+
+        let tasks = JSON.parse(localStorage.getItem('tartib_tasks_v2')) || [
+            { id: 1, text: "03:30 – 04:15 | Uyg‘onish, Bomdod", completed: false },
+            { id: 2, text: "04:15 – 04:30 | Kunlik reja, 3 ta vazifa", completed: false },
+            { id: 3, text: "04:30 – 07:00 | 1-Sprint (Murakkab ishlar)", completed: false },
+            { id: 4, text: "07:00 – 07:45 | Jismoniy mashqlar, dush", completed: false },
+            { id: 5, text: "07:45 – 08:30 | To'yimli nonushta", completed: false },
+            { id: 6, text: "08:30 – 11:00 | 2-Sprint (Loyiha, jamoa)", completed: false },
+            { id: 7, text: "11:00 – 11:30 | Qisqa tanaffus", completed: false },
+            { id: 8, text: "11:30 – 13:00 | 3-Sprint (Mayda vazifalar)", completed: false },
+            { id: 9, text: "13:00 – 13:45 | Peshin namozi va tushlik", completed: false },
+            { id: 10, text: "13:45 – 14:30 | Qaylula (20-30 daqiqa uyqu)", completed: false },
+            { id: 11, text: "14:30 – 15:30 | Ma'muriy ishlar, hujjatlar", completed: false },
+            { id: 12, text: "15:30 – 18:15 | 4-Sprint (Yangi g'oyalar)", completed: false },
+            { id: 13, text: "18:15 – 19:00 | Asr namozi, oilaviy suhbat", completed: false },
+            { id: 14, text: "19:00 – 20:40 | Erkin vaqt (Uy yumushlari)", completed: false },
+            { id: 15, text: "20:40 – 21:20 | Shom namozi, kechki ovqat", completed: false },
+            { id: 16, text: "21:20 – 22:15 | Sarhisob, ijtimoiy tarmoqlar", completed: false },
+            { id: 17, text: "22:15 – 22:45 | Xufton namozi", completed: false },
+            { id: 18, text: "22:45 – 03:30 | Chuqur uyqu", completed: false }
+        ];
+
+        function saveTasks() {
+            localStorage.setItem('tartib_tasks_v2', JSON.stringify(tasks));
+        }
+
+        function checkDailyReset() {
+            const today = new Date().toLocaleDateString();
+            const lastReset = localStorage.getItem('tartib_last_reset');
+            if (lastReset !== today) {
+                tasks.forEach(t => t.completed = false);
+                saveTasks();
+                localStorage.setItem('tartib_last_reset', today);
+            }
+        }
+
+        function isTaskPast(text) {
+            const match = text.match(/(\d{2}):(\d{2})\s*[-–]\s*(\d{2}):(\d{2})/);
+            if (!match) return false;
+            
+            const h1 = parseInt(match[1]);
+            const m1 = parseInt(match[2]);
+            const h2 = parseInt(match[3]);
+            const m2 = parseInt(match[4]);
+            
+            const now = new Date();
+            const curMin = now.getHours() * 60 + now.getMinutes();
+            const startMin = h1 * 60 + m1;
+            const endMin = h2 * 60 + m2;
+            
+            if (startMin < endMin) {
+                return curMin >= endMin;
+            }
+            return false;
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+            
+            let visibleCount = 0;
+            
+            tasks.forEach(task => {
+                // Vaqti o'tgan vazifalarni yashirish (ko'rsatmaslik)
+                if (isTaskPast(task.text)) {
+                    return;
+                }
+                
+                visibleCount++;
+                const item = document.createElement('div');
+                item.className = `task-item ${task.completed ? 'completed' : ''}`;
+                item.onclick = () => toggleTask(task.id);
+                
+                item.innerHTML = `
+                    <span>${task.text}</span>
+                    <div class="checkbox"></div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function addTask() {
+            const text = prompt("Yangi vazifa nomini kiriting:");
+            if (text && text.trim()) {
+                tasks.push({
+                    id: Date.now(),
+                    text: text.trim(),
+                    completed: false
+                });
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        async function loadPrayerTimes() {
+            try {
+                const res = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Nukus&country=Uzbekistan&method=1');
+                const data = await res.json();
+                const timings = data.data.timings;
+                const gregorian = data.data.date.gregorian;
+                
+                document.getElementById('prayerTitle').innerText = `Namoz vaqtlari (${gregorian.date}, Nukus)`;
+                
+                const list = document.getElementById('prayerList');
+                list.innerHTML = '';
+                
+                const prayers = [
+                    { name: "Bomdod", time: timings.Fajr },
+                    { name: "Peshin", time: timings.Dhuhr },
+                    { name: "Asr", time: timings.Asr },
+                    { name: "Shom", time: timings.Maghrib },
+                    { name: "Xufton", time: timings.Isha }
+                ];
+                
+                if (gregorian.weekday.en === "Friday") {
+                    prayers.splice(1, 1, { name: "Juma namozi", time: timings.Dhuhr });
+                }
+
+                prayers.forEach(p => {
+                    const item = document.createElement('div');
+                    
+                    const today = new Date().toLocaleDateString();
+                    const pKey = `prayer_${p.name}_${today}`;
+                    const isCompleted = localStorage.getItem(pKey) === 'true';
+                    
+                    item.className = `task-item ${isCompleted ? 'completed' : ''}`;
+                    
+                    item.onclick = () => {
+                        const state = localStorage.getItem(pKey) === 'true';
+                        localStorage.setItem(pKey, (!state).toString());
+                        if(!state) item.classList.add('completed');
+                        else item.classList.remove('completed');
+                    };
+
+                    item.innerHTML = `
+                        <span>${p.name} - <b>${p.time}</b></span>
+                        <div class="checkbox"></div>
+                    `;
+                    list.appendChild(item);
+                });
+                
+            } catch (error) {
+                document.getElementById('prayerList').innerHTML = '<div style="text-align: center; color: var(--accent);">Xatolik yuz berdi. Internetni tekshiring.</div>';
+            }
+        }
+
+        checkDailyReset();
+        renderTasks();
+        loadPrayerTimes();
+        checkPermissionState();
+
+        // Ilova ochilganda avtomatik ptichka qo'yish
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                let changed = false;
+                tasks.forEach(task => {
+                    if (isTaskPast(task.text) && !task.completed) {
+                        task.completed = true;
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    saveTasks();
+                    renderTasks();
+                }
+            }
+        });
+
+        let lastNotifTime = 0;
+        // Har daqiqada tekshirib ro'yxatni yangilab turish
+        setInterval(() => {
+            checkDailyReset();
+            
+            let needsAttention = false;
+            let changed = false;
+            
+            tasks.forEach(task => {
+                if (isTaskPast(task.text) && !task.completed) {
+                    if (document.visibilityState === 'visible') {
+                        task.completed = true;
+                        changed = true;
+                    } else {
+                        needsAttention = true;
+                    }
+                }
+            });
+
+            if (changed) {
+                saveTasks();
+                renderTasks();
+            }
+
+            // Agar ilova yopiq bo'lsa va vaqti o'tgan ish bo'lsa, har 3 daqiqada eslatma yuboramiz
+            if (needsAttention && Notification.permission === "granted") {
+                const now = Date.now();
+                if (now - lastNotifTime > 3 * 60 * 1000) {
+                    lastNotifTime = now;
+                    const options = {
+                        body: "Vazifa vaqti o'tdi! Tasdiqlash uchun ilovaga kiring. Bo'lmasa bu eslatma qayta-qayta kelaveradi 😅",
+                        icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                        vibrate: [300, 100, 300],
+                        requireInteraction: true
+                    };
+                    
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.ready.then(function(reg) {
+                            reg.showNotification("⏳ Ilovaga kiring!", options);
+                        });
+                    } else {
+                        new Notification("⏳ Ilovaga kiring!", options);
+                    }
+                }
+            }
+        }, 60000);
+
+        window.addEventListener('online', () => {
+            if ("Notification" in window && Notification.permission === "granted") {
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                const options = {
+                    body: "Internet tarmog'iga ulandingiz! " + msg,
+                    icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true
+                };
+                
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        registration.showNotification("🌐 Internet yoqildi", options);
+                    });
+                } else {
+                    new Notification("🌐 Internet yoqildi", options);
+                }
+            } else {
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                alert("🌐 Internet yoqildi!\n\n" + msg);
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('SW registered!', reg);
+                }).catch(err => console.log('SW error', err));
+            });
+        }
+    </script>
+</body>
+</html>
