@@ -392,7 +392,16 @@
             100% { transform: scale(1); opacity: 1; }
         }
     </style>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "bfc57c51-e0fb-49dc-925e-817b6cf066fb",
+        });
+      });
+    </script>
 </head>
 <body>
     <div class="glow"></div>
@@ -542,12 +551,20 @@
 
         async function requestNotificationPermission() {
             const statusEl = document.getElementById('notifyStatus');
+            const btn = document.getElementById('notifyBtn');
             try {
-                if ("Notification" in window) {
+                // OneSignal subscription
+                if (window.OneSignal) {
+                    await OneSignal.Notifications.requestPermission();
+                    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+                    if (isSubscribed) {
+                        statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e;"></span> ✅ Push xabarlar faol!';
+                        btn.textContent = '✅ Yoqilgan';
+                        btn.disabled = true;
+                    }
+                } else if ("Notification" in window) {
                     const permission = await Notification.requestPermission();
                     checkPermissionState();
-                } else {
-                    alert("Brauzeringiz bildirishnomalarni qo'llab-quvvatlamaydi.");
                 }
             } catch (e) {
                 console.error(e);
