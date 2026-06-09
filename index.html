@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kundalik Tartib</title>
+    <title>KUN TARTIBI</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#09090b">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -495,8 +495,8 @@
 <body>
     <!-- SPLASH SCREEN -->
     <div id="splash">
-        <img src="icon.png" class="splash-icon" alt="Kundalik Tartib">
-        <div class="splash-title">Kundalik Tartib</div>
+        <img src="icon.png" class="splash-icon" alt="KUN TARTIBI">
+        <div class="splash-title">KUN TARTIBI</div>
         <div class="splash-sub">Kelajagingni esla</div>
         <div class="splash-bar"><div class="splash-bar-fill"></div></div>
     </div>
@@ -507,7 +507,7 @@
     <div class="app-wrapper">
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <span style="color:#ffffff;">Kundalik</span><br>Tartib
+                <span style="color:#ffffff;">KUN</span><br>TARTIBI
             </div>
             <ul class="sidebar-menu">
                 <li class="menu-item active" onclick="switchTab('vazifalar', this)">
@@ -525,7 +525,7 @@
         <main class="main-content">
             <div class="container">
                 <header id="headerTitle">
-                    <h1>Kundalik Tartib</h1>
+                    <h1>KUN TARTIBI</h1>
                     <p>Ertaga emas, hozir!</p>
                 </header>
 
@@ -621,7 +621,7 @@
             if (tab === 'vazifalar') {
                 document.getElementById('sectionMotivation').style.display = 'block';
                 document.getElementById('sectionTasks').style.display = 'block';
-                header.querySelector('h1').innerText = 'Kundalik Tartib';
+                header.querySelector('h1').innerText = 'KUN TARTIBI';
                 header.querySelector('p').innerText = 'Ertaga emas, hozir!';
             } else if (tab === 'namoz') {
                 document.getElementById('sectionPrayer').style.display = 'block';
@@ -706,10 +706,10 @@
                     
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.ready.then(function(registration) {
-                            registration.showNotification("Kundalik Tartib", options);
+                            registration.showNotification("KUN TARTIBI", options);
                         });
                     } else {
-                        new Notification("Kundalik Tartib", options);
+                        new Notification("KUN TARTIBI", options);
                     }
                 }
             }, 60 * 60 * 1000); // Har 1 soatda
