@@ -487,8 +487,32 @@
           appId: "bfc57c51-e0fb-49dc-925e-817b6cf066fb",
           serviceWorkerParam: { scope: "/" },
           serviceWorkerPath: "/OneSignalSDKWorker.js",
-          notifyButton: { enable: false }
+          notifyButton: { enable: false },
+          promptOptions: {
+            slidedown: {
+              prompts: [{
+                type: "push",
+                autoPrompt: false,
+                text: {
+                  actionMessage: "Kunlik eslatmalar olish uchun ruxsat bering!",
+                  acceptButton: "Ha, Yoqaman",
+                  cancelButton: "Keyinroq"
+                }
+              }]
+            }
+          }
         });
+
+        // Ilk marta ulanishda subscription holatini tekshiramiz
+        const isPushEnabled = OneSignal.User.PushSubscription.optedIn;
+        console.log('[OneSignal] optedIn:', isPushEnabled);
+        if (isPushEnabled) {
+          const statusEl = document.getElementById('notifyStatus');
+          const btn = document.getElementById('notifyBtn');
+          if (statusEl) statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e"></span> ✅ Push xabarlar faol!';
+          if (btn) { btn.textContent = '✅ Yoqilgan'; btn.disabled = true; }
+          scheduleLocalNotifications();
+        }
       });
     </script>
 </head>
@@ -659,25 +683,34 @@
             const statusEl = document.getElementById('notifyStatus');
             const btn = document.getElementById('notifyBtn');
             try {
-                // OneSignal subscription
                 if (window.OneSignal) {
-                    await OneSignal.Notifications.requestPermission();
-                    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-                    if (isSubscribed) {
-                        statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e;"></span> ✅ Push xabarlar faol!';
-                        btn.textContent = '✅ Yoqilgan';
-                        btn.disabled = true;
-                        scheduleLocalNotifications();
-                    }
+                    // OneSignal orqali so'rash
+                    await OneSignal.Slidedown.promptPush();
+                    // 2 soniya kutib natijani tekshirish
+                    setTimeout(async () => {
+                        const isSubscribed = OneSignal.User.PushSubscription.optedIn;
+                        console.log('[Btn] optedIn after prompt:', isSubscribed);
+                        if (isSubscribed) {
+                            statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e"></span> ✅ Push xabarlar faol!';
+                            btn.textContent = '✅ Yoqilgan';
+                            btn.disabled = true;
+                            scheduleLocalNotifications();
+                        } else {
+                            // Fallback: mahalliy bildirishnomalar
+                            if ("Notification" in window) {
+                                await Notification.requestPermission();
+                                checkPermissionState();
+                            }
+                        }
+                    }, 2000);
                 } else if ("Notification" in window) {
-                    const permission = await Notification.requestPermission();
+                    await Notification.requestPermission();
                     checkPermissionState();
                 }
             } catch (e) {
                 console.error("Bildirishnoma xatoligi:", e);
-                // Agar OneSignal (Netlify tarmog'idan tashqarida) ishlamasa, mahalliy eslatmalarni ishga tushiramiz
                 if ("Notification" in window) {
-                    const permission = await Notification.requestPermission();
+                    await Notification.requestPermission();
                     checkPermissionState();
                 }
             }
@@ -688,11 +721,11 @@
             const btn = document.getElementById('notifyBtn');
             
             if ("Notification" in window && Notification.permission === "granted") {
-                statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--success);"></span> ✅ Bildirishnomalar faol!';
+                statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success)"></span> ✅ Bildirishnomalar faol!';
                 btn.style.display = 'none';
                 scheduleLocalNotifications();
             } else if ("Notification" in window && Notification.permission === "denied") {
-                statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent);"></span> ❌ Ruxsat berilmadi';
+                statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)"></span> ❌ Ruxsat berilmadi';
             }
         }
 
@@ -983,11 +1016,11 @@
             }
         });
 
+        // OneSignal o'z service worker'ini o'zi ro'yxatdan o'tkazadi
+        // Shuning uchun bu yerda faqat log qilamiz
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./OneSignalSDKWorker.js').then(reg => {
-                    console.log('SW registered!', reg);
-                }).catch(err => console.log('SW error', err));
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                console.log('[SW] Registered workers:', regs.map(r => r.active && r.active.scriptURL));
             });
         }
     </script>
