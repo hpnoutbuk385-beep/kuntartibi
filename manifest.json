@@ -1,13 +1,24 @@
 {
   "name": "KUN TARTIBI",
   "short_name": "KUN TARTIBI",
-  "start_url": ".",
+  "description": "Kundalik tartib va eslatmalar ilovasi",
+  "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#09090b",
-  "theme_color": "#09090b",
-  "icons": [{
-    "src": "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  }]
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

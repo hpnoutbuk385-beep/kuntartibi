@@ -478,7 +478,15 @@
             to   { width: 100%; }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Confetti - internet bo'lsa yuklanadi, bo'lmasa ham ishlaydi -->
+    <script>
+    // canvas-confetti inline minimal version
+    window._confettiReady = false;
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+    s.onload = function() { window._confettiReady = true; };
+    document.head.appendChild(s);
+    </script>
 </head>
 <body>
     <!-- SPLASH SCREEN -->
@@ -586,11 +594,14 @@
     </div>
 
     <script>
-        // Splash screen yopish
-        // Service Worker ro'yxatdan o'tkazish
+        // ── Service Worker ro'yxatdan o'tkazish ──────────────────
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(reg => {
                 console.log('[SW] Registered:', reg.scope);
+                // SW ga eslatma taymerini boshlashni aytish
+                navigator.serviceWorker.ready.then(r => {
+                    r.active && r.active.postMessage({ type: 'SCHEDULE_NOTIFICATIONS' });
+                });
             }).catch(err => console.error('[SW] Error:', err));
         }
 
@@ -603,12 +614,14 @@
                 // Ilova ochilganda "Xush kelibsiz" xabari
                 if (Notification.permission === 'granted') {
                     const hour = new Date().getHours();
-                    let salom = hour < 12 ? 'Xayrli tong' : hour < 17 ? 'Xayrli kun' : 'Xayrli kech';
+                    let salom = hour < 5 ? 'Xayrli tun' : hour < 12 ? 'Xayrli tong' : hour < 17 ? 'Xayrli kun' : 'Xayrli kech';
                     const opts = {
                         body: 'KUN TARTIBI ga xush kelibsiz! Bugun ham maqsadlaringizga intiling 💪',
-                        icon: 'https://cdn-icons-png.flaticon.com/512/3050/3050357.png',
-                        badge: 'https://cdn-icons-png.flaticon.com/512/3050/3050357.png',
-                        vibrate: [100, 50, 100]
+                        icon: './icon.png',
+                        badge: './icon.png',
+                        vibrate: [100, 50, 100],
+                        tag: 'welcome',
+                        renotify: false
                     };
                     navigator.serviceWorker.ready.then(reg =>
                         reg.showNotification('👋 ' + salom + '!', opts)
@@ -717,13 +730,18 @@
         function sendTestNotification() {
             if (Notification.permission !== 'granted') return;
             const options = {
-                body: "KUN TARTIBI ilovasi muvaffaqiyatli ulandi! Har soatda eslatmalar keladi.",
-                icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
-                badge: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
-                vibrate: [200, 100, 200]
+                body: "KUN TARTIBI ilovasi muvaffaqiyatli ulandi! Har soatda eslatmalar keladi. ✅",
+                icon: "./icon.png",
+                badge: "./icon.png",
+                vibrate: [200, 100, 200],
+                requireInteraction: false
             };
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => reg.showNotification("✅ KUN TARTIBI - Ulandi!", options));
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("✅ KUN TARTIBI - Ulandi!", options);
+                    // SW ga eslatma taymerini boshlashni ayt
+                    reg.active && reg.active.postMessage({ type: 'SCHEDULE_NOTIFICATIONS' });
+                });
             } else {
                 new Notification("✅ KUN TARTIBI - Ulandi!", options);
             }
@@ -732,25 +750,45 @@
         function scheduleLocalNotifications() {
             if (window.localNotifScheduled) return;
             window.localNotifScheduled = true;
-            setInterval(() => {
-                if (Notification.permission === "granted") {
-                    const msg = messages[Math.floor(Math.random() * messages.length)];
-                    const options = {
-                        body: msg + " Kelajagingiz uchun hoziroq harakat qiling!",
-                        icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
-                        vibrate: [200, 100, 200, 100, 200],
-                        requireInteraction: true
-                    };
-                    
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.ready.then(function(registration) {
-                            registration.showNotification("KUN TARTIBI", options);
-                        });
-                    } else {
-                        new Notification("KUN TARTIBI", options);
+
+            // SW ga eslatma taymerini boshlashni buyurish (ilova yopiq bo'lsa ham ishlaydi)
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    if (reg.active) {
+                        reg.active.postMessage({ type: 'SCHEDULE_NOTIFICATIONS' });
                     }
+                });
+            }
+
+            // Ilova ochiq bo'lsa — JS setInterval ham ishlaydi (zaxira)
+            function sendHourlyNotif() {
+                if (Notification.permission !== 'granted') return;
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                const hour = new Date().getHours();
+                const salom = hour < 5 ? '🌙' : hour < 12 ? '🌅' : hour < 17 ? '☀️' : '🌇';
+                const options = {
+                    body: msg + "\n\nKelajagingiz uchun hoziroq harakat qiling!",
+                    icon: "./icon.png",
+                    badge: "./icon.png",
+                    vibrate: [200, 100, 200, 100, 200],
+                    requireInteraction: false,
+                    tag: 'hourly-reminder',
+                    renotify: true
+                };
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => reg.showNotification(salom + ' KUN TARTIBI', options));
+                } else {
+                    new Notification(salom + ' KUN TARTIBI', options);
                 }
-            }, 60 * 60 * 1000); // Har 1 soatda
+            }
+
+            // Keyingi soat boshiga to'g'rilash
+            const now = new Date();
+            const msToNext = (60 - now.getMinutes()) * 60 * 1000 - now.getSeconds() * 1000;
+            setTimeout(() => {
+                sendHourlyNotif();
+                setInterval(sendHourlyNotif, 60 * 60 * 1000);
+            }, msToNext);
         }
 
         let tasks = JSON.parse(localStorage.getItem('tartib_tasks_v2')) || [
@@ -855,55 +893,87 @@
             }
         }
 
+        // Nukus uchun taxminiy namoz vaqtlari (offline zaxira)
+        // Yoz mavsumi (may-avg): taxminiy vaqtlar
+        const OFFLINE_PRAYER_TIMES = {
+            Fajr: '03:45', Dhuhr: '13:10', Asr: '17:20', Maghrib: '20:55', Isha: '22:30'
+        };
+
+        function renderPrayerList(prayers, dateStr) {
+            if (dateStr) document.getElementById('prayerTitle').innerText = `Namoz vaqtlari (${dateStr}, Nukus)`;
+            const list = document.getElementById('prayerList');
+            list.innerHTML = '';
+            const today = new Date().toLocaleDateString();
+            prayers.forEach(p => {
+                const item = document.createElement('div');
+                const pKey = `prayer_${p.name}_${today}`;
+                const isCompleted = localStorage.getItem(pKey) === 'true';
+                item.className = `task-item ${isCompleted ? 'completed' : ''}`;
+                item.onclick = () => {
+                    const state = localStorage.getItem(pKey) === 'true';
+                    localStorage.setItem(pKey, (!state).toString());
+                    if(!state) item.classList.add('completed');
+                    else item.classList.remove('completed');
+                };
+                item.innerHTML = `<span>${p.name} - <b>${p.time}</b></span><div class="checkbox"></div>`;
+                list.appendChild(item);
+            });
+        }
+
         async function loadPrayerTimes() {
+            // Avval offline zaxira vaqtlarini ko'rsatamiz
+            renderPrayerList([
+                { name: "Bomdod",  time: OFFLINE_PRAYER_TIMES.Fajr },
+                { name: "Peshin",  time: OFFLINE_PRAYER_TIMES.Dhuhr },
+                { name: "Asr",     time: OFFLINE_PRAYER_TIMES.Asr },
+                { name: "Shom",    time: OFFLINE_PRAYER_TIMES.Maghrib },
+                { name: "Xufton",  time: OFFLINE_PRAYER_TIMES.Isha }
+            ], null);
+
+            // Keyin internet orqali yangilaymiz
             try {
-                const res = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Nukus&country=Uzbekistan&method=1');
+                const res = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Nukus&country=Uzbekistan&method=1', {
+                    signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+                });
                 const data = await res.json();
                 const timings = data.data.timings;
                 const gregorian = data.data.date.gregorian;
-                
-                document.getElementById('prayerTitle').innerText = `Namoz vaqtlari (${gregorian.date}, Nukus)`;
-                
-                const list = document.getElementById('prayerList');
-                list.innerHTML = '';
-                
+
+                // Yangi vaqtlarni localStorage'ga saqlash (keyingi offline uchun)
+                localStorage.setItem('prayerCache', JSON.stringify({ timings, date: gregorian.date, weekday: gregorian.weekday.en }));
+
                 const prayers = [
                     { name: "Bomdod", time: timings.Fajr },
                     { name: "Peshin", time: timings.Dhuhr },
-                    { name: "Asr", time: timings.Asr },
-                    { name: "Shom", time: timings.Maghrib },
+                    { name: "Asr",    time: timings.Asr },
+                    { name: "Shom",   time: timings.Maghrib },
                     { name: "Xufton", time: timings.Isha }
                 ];
-                
-                if (gregorian.weekday.en === "Friday") {
+                if (gregorian.weekday.en === 'Friday') {
                     prayers.splice(1, 1, { name: "Juma namozi", time: timings.Dhuhr });
                 }
+                renderPrayerList(prayers, gregorian.date);
 
-                prayers.forEach(p => {
-                    const item = document.createElement('div');
-                    
-                    const today = new Date().toLocaleDateString();
-                    const pKey = `prayer_${p.name}_${today}`;
-                    const isCompleted = localStorage.getItem(pKey) === 'true';
-                    
-                    item.className = `task-item ${isCompleted ? 'completed' : ''}`;
-                    
-                    item.onclick = () => {
-                        const state = localStorage.getItem(pKey) === 'true';
-                        localStorage.setItem(pKey, (!state).toString());
-                        if(!state) item.classList.add('completed');
-                        else item.classList.remove('completed');
-                    };
-
-                    item.innerHTML = `
-                        <span>${p.name} - <b>${p.time}</b></span>
-                        <div class="checkbox"></div>
-                    `;
-                    list.appendChild(item);
-                });
-                
             } catch (error) {
-                document.getElementById('prayerList').innerHTML = '<div style="text-align: center; color: var(--accent);">Xatolik yuz berdi. Internetni tekshiring.</div>';
+                // Internet yo'q — localStorage'dan olishga urinish
+                const cached = localStorage.getItem('prayerCache');
+                if (cached) {
+                    try {
+                        const c = JSON.parse(cached);
+                        const prayers = [
+                            { name: "Bomdod", time: c.timings.Fajr },
+                            { name: "Peshin", time: c.timings.Dhuhr },
+                            { name: "Asr",    time: c.timings.Asr },
+                            { name: "Shom",   time: c.timings.Maghrib },
+                            { name: "Xufton", time: c.timings.Isha }
+                        ];
+                        if (c.weekday === 'Friday') prayers.splice(1, 1, { name: "Juma namozi", time: c.timings.Dhuhr });
+                        renderPrayerList(prayers, c.date + ' (saqlangan)');
+                        return;
+                    } catch(e) {}
+                }
+                // Taxminiy offline vaqtlarni ko'rsatish
+                document.getElementById('prayerTitle').innerText = 'Namoz vaqtlari (taxminiy, Nukus)';
             }
         }
 
@@ -953,22 +1023,22 @@
                 renderTasks();
             }
 
-            // Agar ilova yopiq bo'lsa va vaqti o'tgan ish bo'lsa, har 3 daqiqada eslatma yuboramiz
+            // Agar vaqti o'tgan ish bo'lsa, har 3 daqiqada eslatma yuboramiz
             if (needsAttention && Notification.permission === "granted") {
                 const now = Date.now();
                 if (now - lastNotifTime > 3 * 60 * 1000) {
                     lastNotifTime = now;
                     const options = {
-                        body: "Vazifa vaqti o'tdi! Tasdiqlash uchun ilovaga kiring. Bo'lmasa bu eslatma qayta-qayta kelaveradi 😅",
-                        icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                        body: "Vazifa vaqti o'tdi! Tasdiqlash uchun ilovaga kiring. 😅",
+                        icon: "./icon.png",
+                        badge: "./icon.png",
                         vibrate: [300, 100, 300],
-                        requireInteraction: true
+                        requireInteraction: true,
+                        tag: 'overdue-task',
+                        renotify: true
                     };
-                    
                     if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.ready.then(function(reg) {
-                            reg.showNotification("⏳ Ilovaga kiring!", options);
-                        });
+                        navigator.serviceWorker.ready.then(reg => reg.showNotification("⏳ Ilovaga kiring!", options));
                     } else {
                         new Notification("⏳ Ilovaga kiring!", options);
                     }
