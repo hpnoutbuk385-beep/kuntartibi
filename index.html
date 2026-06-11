@@ -717,11 +717,13 @@
         function checkPermissionState() {
             const statusEl = document.getElementById('notifyStatus');
             const btn = document.getElementById('notifyBtn');
-            
+
             if ("Notification" in window && Notification.permission === "granted") {
                 statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success)"></span> ✅ Bildirishnomalar faol!';
                 btn.style.display = 'none';
                 scheduleLocalNotifications();
+                // Namoz eslatmalarini ham rejalashtirish
+                loadPrayerTimes();
             } else if ("Notification" in window && Notification.permission === "denied") {
                 statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)"></span> ❌ Ruxsat berilmadi';
             }
@@ -893,10 +895,26 @@
             }
         }
 
-        // Nukus uchun taxminiy namoz vaqtlari (offline zaxira)
-        // Yoz mavsumi (may-avg): taxminiy vaqtlar
+        // Nukus uchun taxminiy namoz vaqtlari (offline zaxira) — yoz mavsumi
         const OFFLINE_PRAYER_TIMES = {
             Fajr: '03:45', Dhuhr: '13:10', Asr: '17:20', Maghrib: '20:55', Isha: '22:30'
+        };
+
+        // ── SW ga namoz vaqtlarini yuborish ──────────────────────
+        function sendPrayersToSW(prayers) {
+            if (!('serviceWorker' in navigator)) return;
+            navigator.serviceWorker.ready.then(reg => {
+                if (reg.active) {
+                    reg.active.postMessage({ type: 'SCHEDULE_PRAYERS', prayers });
+                    console.log('[App] Namoz vaqtlari SW ga yuborildi:', prayers.map(p => p.name + ' ' + p.time).join(', '));
+                }
+            }).catch(() => {});
+        }
+
+        // Namoz emoji xaritasi
+        const prayerEmoji = {
+            'Bomdod': '🌅', 'Peshin': '☀️', 'Juma namozi': '🕌',
+            'Asr': '🌤️', 'Shom': '🌇', 'Xufton': '🌙'
         };
 
         function renderPrayerList(prayers, dateStr) {
@@ -904,10 +922,22 @@
             const list = document.getElementById('prayerList');
             list.innerHTML = '';
             const today = new Date().toLocaleDateString();
+            const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
             prayers.forEach(p => {
                 const item = document.createElement('div');
                 const pKey = `prayer_${p.name}_${today}`;
                 const isCompleted = localStorage.getItem(pKey) === 'true';
+
+                // Vaqtni solishtirish (o'tganmi yoki yo'q)
+                const [ph, pm] = p.time.split(':').map(Number);
+                const pMin = ph * 60 + pm;
+                const isPast = nowMin >= pMin;
+                const isNext = !isPast && prayers.filter(x => {
+                    const [xh, xm] = x.time.split(':').map(Number);
+                    return xh * 60 + xm > nowMin;
+                })[0]?.name === p.name;
+
                 item.className = `task-item ${isCompleted ? 'completed' : ''}`;
                 item.onclick = () => {
                     const state = localStorage.getItem(pKey) === 'true';
@@ -915,22 +945,26 @@
                     if(!state) item.classList.add('completed');
                     else item.classList.remove('completed');
                 };
-                item.innerHTML = `<span>${p.name} - <b>${p.time}</b></span><div class="checkbox"></div>`;
+
+                const emoji = prayerEmoji[p.name] || '🕌';
+                const nextBadge = isNext ? ' <span style="background:rgba(245,158,11,0.2);color:#f59e0b;font-size:0.7rem;padding:2px 8px;border-radius:99px;font-weight:700;margin-left:8px;">KEYINGI</span>' : '';
+                item.innerHTML = `<span>${emoji} ${p.name} — <b>${p.time}</b>${nextBadge}</span><div class="checkbox"></div>`;
                 list.appendChild(item);
             });
         }
 
         async function loadPrayerTimes() {
-            // Avval offline zaxira vaqtlarini ko'rsatamiz
-            renderPrayerList([
+            // 1. Avval offline taxminiy vaqtlarni ko'rsatamiz (bir zumda)
+            const offlinePrayers = [
                 { name: "Bomdod",  time: OFFLINE_PRAYER_TIMES.Fajr },
                 { name: "Peshin",  time: OFFLINE_PRAYER_TIMES.Dhuhr },
                 { name: "Asr",     time: OFFLINE_PRAYER_TIMES.Asr },
                 { name: "Shom",    time: OFFLINE_PRAYER_TIMES.Maghrib },
                 { name: "Xufton",  time: OFFLINE_PRAYER_TIMES.Isha }
-            ], null);
+            ];
+            renderPrayerList(offlinePrayers, null);
 
-            // Keyin internet orqali yangilaymiz
+            // 2. Internet orqali aniq vaqtlarni olamiz
             try {
                 const res = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Nukus&country=Uzbekistan&method=1', {
                     signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
@@ -939,8 +973,10 @@
                 const timings = data.data.timings;
                 const gregorian = data.data.date.gregorian;
 
-                // Yangi vaqtlarni localStorage'ga saqlash (keyingi offline uchun)
-                localStorage.setItem('prayerCache', JSON.stringify({ timings, date: gregorian.date, weekday: gregorian.weekday.en }));
+                // localStorage'ga saqlash (keyingi offline uchun)
+                localStorage.setItem('prayerCache', JSON.stringify({
+                    timings, date: gregorian.date, weekday: gregorian.weekday.en
+                }));
 
                 const prayers = [
                     { name: "Bomdod", time: timings.Fajr },
@@ -954,8 +990,13 @@
                 }
                 renderPrayerList(prayers, gregorian.date);
 
+                // ✅ SW ga aniq vaqtlarni yuboramiz — eslatmalar shu vaqtda keladi
+                if (Notification.permission === 'granted') {
+                    sendPrayersToSW(prayers);
+                }
+
             } catch (error) {
-                // Internet yo'q — localStorage'dan olishga urinish
+                // 3. Internet yo'q — localStorage'dan olish
                 const cached = localStorage.getItem('prayerCache');
                 if (cached) {
                     try {
@@ -969,11 +1010,18 @@
                         ];
                         if (c.weekday === 'Friday') prayers.splice(1, 1, { name: "Juma namozi", time: c.timings.Dhuhr });
                         renderPrayerList(prayers, c.date + ' (saqlangan)');
+                        // Saqlangan vaqtlarni ham SW ga yuboramiz
+                        if (Notification.permission === 'granted') {
+                            sendPrayersToSW(prayers);
+                        }
                         return;
                     } catch(e) {}
                 }
-                // Taxminiy offline vaqtlarni ko'rsatish
+                // 4. Taxminiy offline vaqtlar bilan SW ni yoqamiz
                 document.getElementById('prayerTitle').innerText = 'Namoz vaqtlari (taxminiy, Nukus)';
+                if (Notification.permission === 'granted') {
+                    sendPrayersToSW(offlinePrayers);
+                }
             }
         }
 
