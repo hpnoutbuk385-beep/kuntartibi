@@ -667,13 +667,19 @@
                         statusEl.innerHTML = '<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e;"></span> ✅ Push xabarlar faol!';
                         btn.textContent = '✅ Yoqilgan';
                         btn.disabled = true;
+                        scheduleLocalNotifications();
                     }
                 } else if ("Notification" in window) {
                     const permission = await Notification.requestPermission();
                     checkPermissionState();
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Bildirishnoma xatoligi:", e);
+                // Agar OneSignal (Netlify tarmog'idan tashqarida) ishlamasa, mahalliy eslatmalarni ishga tushiramiz
+                if ("Notification" in window) {
+                    const permission = await Notification.requestPermission();
+                    checkPermissionState();
+                }
             }
         }
 
@@ -694,6 +700,22 @@
             if (window.localNotifScheduled) return;
             window.localNotifScheduled = true;
             
+            // Ilk ulanishda test xabar yuborish
+            if (Notification.permission === "granted") {
+                const options = {
+                    body: "Bildirishnomalar va eslatmalar muvaffaqiyatli yoqildi!",
+                    icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                    vibrate: [200, 100, 200]
+                };
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        registration.showNotification("✅ Tizim faol", options);
+                    });
+                } else {
+                    new Notification("✅ Tizim faol", options);
+                }
+            }
+
             setInterval(() => {
                 if (Notification.permission === "granted") {
                     const msg = messages[Math.floor(Math.random() * messages.length)];
@@ -963,7 +985,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
+                navigator.serviceWorker.register('./OneSignalSDKWorker.js').then(reg => {
                     console.log('SW registered!', reg);
                 }).catch(err => console.log('SW error', err));
             });
