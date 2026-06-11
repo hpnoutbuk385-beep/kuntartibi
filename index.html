@@ -478,43 +478,7 @@
             to   { width: 100%; }
         }
     </style>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "bfc57c51-e0fb-49dc-925e-817b6cf066fb",
-          serviceWorkerParam: { scope: "/" },
-          serviceWorkerPath: "/OneSignalSDKWorker.js",
-          notifyButton: { enable: false },
-          promptOptions: {
-            slidedown: {
-              prompts: [{
-                type: "push",
-                autoPrompt: false,
-                text: {
-                  actionMessage: "Kunlik eslatmalar olish uchun ruxsat bering!",
-                  acceptButton: "Ha, Yoqaman",
-                  cancelButton: "Keyinroq"
-                }
-              }]
-            }
-          }
-        });
-
-        // Ilk marta ulanishda subscription holatini tekshiramiz
-        const isPushEnabled = OneSignal.User.PushSubscription.optedIn;
-        console.log('[OneSignal] optedIn:', isPushEnabled);
-        if (isPushEnabled) {
-          const statusEl = document.getElementById('notifyStatus');
-          const btn = document.getElementById('notifyBtn');
-          if (statusEl) statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e"></span> ✅ Push xabarlar faol!';
-          if (btn) { btn.textContent = '✅ Yoqilgan'; btn.disabled = true; }
-          scheduleLocalNotifications();
-        }
-      });
-    </script>
 </head>
 <body>
     <!-- SPLASH SCREEN -->
@@ -623,11 +587,33 @@
 
     <script>
         // Splash screen yopish
+        // Service Worker ro'yxatdan o'tkazish
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                console.log('[SW] Registered:', reg.scope);
+            }).catch(err => console.error('[SW] Error:', err));
+        }
+
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splash');
                 if (splash) splash.classList.add('hidden');
                 setTimeout(() => { if (splash) splash.remove(); }, 700);
+
+                // Ilova ochilganda "Xush kelibsiz" xabari
+                if (Notification.permission === 'granted') {
+                    const hour = new Date().getHours();
+                    let salom = hour < 12 ? 'Xayrli tong' : hour < 17 ? 'Xayrli kun' : 'Xayrli kech';
+                    const opts = {
+                        body: 'KUN TARTIBI ga xush kelibsiz! Bugun ham maqsadlaringizga intiling 💪',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/3050/3050357.png',
+                        badge: 'https://cdn-icons-png.flaticon.com/512/3050/3050357.png',
+                        vibrate: [100, 50, 100]
+                    };
+                    navigator.serviceWorker.ready.then(reg =>
+                        reg.showNotification('👋 ' + salom + '!', opts)
+                    ).catch(() => new Notification('👋 ' + salom + '!', opts));
+                }
             }, 2800);
         });
 
@@ -682,37 +668,36 @@
         async function requestNotificationPermission() {
             const statusEl = document.getElementById('notifyStatus');
             const btn = document.getElementById('notifyBtn');
+
+            if (!("Notification" in window)) {
+                statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444"></span> ❌ Brauzer qo\'llab-quvvatlamaydi';
+                return;
+            }
+
+            if (Notification.permission === 'denied') {
+                statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b"></span> ⚠️ Sozlamalardan ruxsat bering!';
+                alert("Bildirishnoma ruxsati bloklangan!\n\nBrauzer manzil satrining yonidagi \ud83d\udd12 belgisini bosib, Bildirishnomalarni \'Ruxsat bering\' qiling.");
+                return;
+            }
+
+            btn.textContent = '⏳ Kutilmoqda...';
+            btn.disabled = true;
+
             try {
-                if (window.OneSignal) {
-                    // OneSignal orqali so'rash
-                    await OneSignal.Slidedown.promptPush();
-                    // 2 soniya kutib natijani tekshirish
-                    setTimeout(async () => {
-                        const isSubscribed = OneSignal.User.PushSubscription.optedIn;
-                        console.log('[Btn] optedIn after prompt:', isSubscribed);
-                        if (isSubscribed) {
-                            statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e"></span> ✅ Push xabarlar faol!';
-                            btn.textContent = '✅ Yoqilgan';
-                            btn.disabled = true;
-                            scheduleLocalNotifications();
-                        } else {
-                            // Fallback: mahalliy bildirishnomalar
-                            if ("Notification" in window) {
-                                await Notification.requestPermission();
-                                checkPermissionState();
-                            }
-                        }
-                    }, 2000);
-                } else if ("Notification" in window) {
-                    await Notification.requestPermission();
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
                     checkPermissionState();
+                    // Darhol test xabar yuborish
+                    sendTestNotification();
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '🔔 Bildirishnomalarni yoqish';
+                    statusEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444"></span> Ruxsat berilmadi';
                 }
-            } catch (e) {
-                console.error("Bildirishnoma xatoligi:", e);
-                if ("Notification" in window) {
-                    await Notification.requestPermission();
-                    checkPermissionState();
-                }
+            } catch(e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.textContent = '🔔 Bildirishnomalarni yoqish';
             }
         }
 
@@ -729,26 +714,24 @@
             }
         }
 
+        function sendTestNotification() {
+            if (Notification.permission !== 'granted') return;
+            const options = {
+                body: "KUN TARTIBI ilovasi muvaffaqiyatli ulandi! Har soatda eslatmalar keladi.",
+                icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                badge: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
+                vibrate: [200, 100, 200]
+            };
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => reg.showNotification("✅ KUN TARTIBI - Ulandi!", options));
+            } else {
+                new Notification("✅ KUN TARTIBI - Ulandi!", options);
+            }
+        }
+
         function scheduleLocalNotifications() {
             if (window.localNotifScheduled) return;
             window.localNotifScheduled = true;
-            
-            // Ilk ulanishda test xabar yuborish
-            if (Notification.permission === "granted") {
-                const options = {
-                    body: "Bildirishnomalar va eslatmalar muvaffaqiyatli yoqildi!",
-                    icon: "https://cdn-icons-png.flaticon.com/512/3050/3050357.png",
-                    vibrate: [200, 100, 200]
-                };
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(function(registration) {
-                        registration.showNotification("✅ Tizim faol", options);
-                    });
-                } else {
-                    new Notification("✅ Tizim faol", options);
-                }
-            }
-
             setInterval(() => {
                 if (Notification.permission === "granted") {
                     const msg = messages[Math.floor(Math.random() * messages.length)];
@@ -1016,13 +999,8 @@
             }
         });
 
-        // OneSignal o'z service worker'ini o'zi ro'yxatdan o'tkazadi
-        // Shuning uchun bu yerda faqat log qilamiz
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => {
-                console.log('[SW] Registered workers:', regs.map(r => r.active && r.active.scriptURL));
-            });
-        }
+        // Ilova ochilganda bildirishnoma holatini tekshirish
+        checkPermissionState();
     </script>
 </body>
 </html>
